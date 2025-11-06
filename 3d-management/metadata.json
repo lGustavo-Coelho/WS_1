@@ -1,0 +1,5 @@
+{
+  "name": "3D Management",
+  "description": "An intuitive dashboard application for managing 3D printing services, including quotes, product inventory, and sales.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,12 @@
+
+{
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "target": "ES2020"
+  },
+  "include": ["electron"]
+}

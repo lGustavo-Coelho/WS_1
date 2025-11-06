@@ -1,0 +1,42 @@
+{
+  "name": "3d-management-desktop",
+  "version": "1.0.0",
+  "description": "A desktop application for managing 3D printing services.",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && vite build && electron-builder",
+    "preview": "vite preview",
+    "migrate": "knex migrate:latest --knexfile knexfile.ts"
+  },
+  "dependencies": {
+    "knex": "^3.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sqlite3": "^5.1.7",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "electron": "^39.1.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.2",
+    "vite": "^7.2.0",
+    "vite-plugin-electron": "^0.15.5",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  },
+  "build": {
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "dist"
+      }
+    ]
+  }
+}
