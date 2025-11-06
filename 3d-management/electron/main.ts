@@ -3,6 +3,8 @@
 import { app, BrowserWindow, BrowserWindowConstructorOptions, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { initDatabase, closeDatabase } from './database';
+import { setupIpcHandlers } from './ipc-handlers';
 
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const isDev = !!VITE_DEV_SERVER_URL;
@@ -51,9 +53,25 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  // Initialize database
+  try {
+    const db = initDatabase();
+    await db.migrate.latest();
+    console.log('Database migrations completed');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+  }
 
-app.on('window-all-closed', () => {
+  // Setup IPC handlers
+  setupIpcHandlers();
+
+  // Create window
+  createWindow();
+});
+
+app.on('window-all-closed', async () => {
+  await closeDatabase();
   if (process.platform !== 'darwin') {
     app.quit();
   }

@@ -17,36 +17,46 @@ export type TransactionCategory =
 export interface Filament {
   id: string;
   name: string;
-  type: FilamentType;
+  type: string;
   color: string;
-  stock: number; // grams
-  costPerKg: number;
-  purchaseDate: string; // ISO string
+  brand: string;
+  cost_per_kg: number;
+  stock_kg: number;
+  density: number;
+  supplier?: string;
+  purchase_date?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Component {
   id: string;
   name: string;
-  unit: string; // e.g., 'piece', 'meter'
+  category: string;
+  cost_per_unit: number;
   stock: number;
-  costPerUnit: number;
-  supplier: string;
-  purchaseDate?: string; // ISO string
+  supplier?: string;
+  purchase_date?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Printer {
   id: string;
   name: string;
   model: string;
-  status: PrinterStatus;
-  nozzleSize: number;
-  purchaseValue?: number;
-  lifespanHours?: number;
-  powerConsumptionWatts?: number;
-  purchaseDate?: string;
-  printedHours: number;
-  powerConsumptionKW: number;
-  hourlyDepreciation: number;
+  status: string;
+  nozzle_size: number;
+  power_consumption: number;
+  purchase_price: number;
+  purchase_date?: string;
+  total_print_hours: number;
+  maintenance_history?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Transaction {

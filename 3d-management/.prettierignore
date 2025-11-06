@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-electron
+dist-ssr
+*.local
+build
+coverage
+.vscode
+.idea
+*.log
