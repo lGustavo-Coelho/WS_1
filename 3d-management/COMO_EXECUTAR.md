@@ -84,7 +84,50 @@ npm run migrate
 
 ## ▶️ Executando o Programa
 
-### Modo Desenvolvimento (Recomendado para testes)
+### Opção 1: Executável Windows (.exe) - RECOMENDADO PARA USUÁRIOS
+
+**Esta é a maneira mais fácil para usuários que apenas querem usar o programa!**
+
+#### Como Gerar o Executável (.exe)
+
+```bash
+# 1. Instalar dependências (apenas na primeira vez)
+npm install
+
+# 2. Executar as migrações do banco de dados (apenas na primeira vez)
+npm run migrate
+
+# 3. Gerar o executável Windows
+npm run build:win
+```
+
+⏱️ O processo de build pode levar 5-10 minutos na primeira vez.
+
+✅ Após a conclusão, o instalador será gerado em: `release/3D Management Desktop-1.0.0-Setup.exe`
+
+#### Como Instalar e Usar o .exe
+
+1. **Navegue até a pasta de saída:**
+   ```
+   release/3D Management Desktop-1.0.0-Setup.exe
+   ```
+
+2. **Execute o instalador:**
+   - Clique duas vezes no arquivo `.exe`
+   - Siga o assistente de instalação
+   - Escolha o diretório de instalação (ou use o padrão)
+   - O instalador criará atalhos na Área de Trabalho e no Menu Iniciar
+
+3. **Execute o programa:**
+   - Use o atalho na Área de Trabalho, OU
+   - Procure por "3D Management Desktop" no Menu Iniciar
+   - Clique para abrir
+
+**✨ Pronto! Agora você pode usar o programa sem precisar do Node.js ou linha de comando!**
+
+---
+
+### Opção 2: Modo Desenvolvimento (Para desenvolvedores)
 
 ```bash
 npm run dev
@@ -95,7 +138,7 @@ Isso irá:
 2. Abrir automaticamente a aplicação Electron
 3. Habilitar hot-reload (recarrega automaticamente quando você faz alterações)
 
-### Usando o Script Windows (apenas Windows)
+### Opção 3: Usando o Script Windows (apenas Windows)
 
 Se você estiver no Windows, pode usar o arquivo `.bat` incluído:
 
@@ -107,34 +150,53 @@ start-3d-management-dev.bat
 .\start-3d-management-dev.bat
 ```
 
-### Modo Produção
+### Opção 4: Modo Produção (Sem instalador)
 
-Para executar a versão otimizada para produção:
+Para executar a versão otimizada sem criar o .exe:
 
 ```bash
 # 1. Compilar o projeto
-npm run build
+npm run build:dir
 
-# 2. Executar a versão compilada
-npm run preview
+# 2. O aplicativo compilado estará em release/win-unpacked/
+# Execute o arquivo .exe dentro dessa pasta
 ```
 
 ---
 
-## 🎯 Opções de Execução
+## 🎯 Qual Opção Escolher?
 
-### Para Usuários Finais
+### Para Usuários Finais (Apenas usar o programa)
 
-Se você apenas quer **usar** o programa (não desenvolver):
+**✅ Use a Opção 1: Executável Windows (.exe)**
 
-1. Peça ao desenvolvedor para gerar um executável
-2. O desenvolvedor executará: `npm run build`
-3. O executável estará em `dist-electron/`
-4. Instale e execute como qualquer outro programa
+- Não precisa instalar Node.js
+- Não precisa usar linha de comando
+- Instalação simples como qualquer programa Windows
+- Atalhos automáticos na Área de Trabalho
+- Atualizações futuras podem ser instaladas facilmente
 
-### Para Desenvolvedores
+**Passos:**
+1. Peça ao desenvolvedor para gerar o `.exe` (ou gere você mesmo seguindo a Opção 1)
+2. Execute o instalador `3D Management Desktop-1.0.0-Setup.exe`
+3. Use o atalho criado na Área de Trabalho
 
-Se você quer **modificar** o programa:
+### Para Desenvolvedores (Modificar/testar o programa)
+
+**✅ Use a Opção 2: Modo Desenvolvimento**
+
+- Ideal para fazer alterações no código
+- Hot-reload automático
+- Ferramentas de desenvolvimento ativas
+- Acesso ao console de erros
+
+**Passos:**
+1. Instale Node.js e dependências
+2. Execute `npm run dev`
+3. Faça suas modificações
+4. Teste em tempo real
+
+**Comandos úteis para desenvolvedores:**
 
 ```bash
 # Modo watch - recarrega automaticamente
@@ -148,6 +210,10 @@ npm run test
 
 # Verificar código (lint)
 npm run lint
+
+# Gerar executável para distribuir
+npm run build:win
+```
 ```
 
 ---
@@ -175,6 +241,31 @@ Você verá:
 ---
 
 ## 🐛 Solução de Problemas
+
+### Problema: Erro ao gerar o .exe (electron-builder)
+**Solução:**
+```bash
+# 1. Certifique-se de que todas as dependências estão instaladas
+npm install
+
+# 2. Limpe builds anteriores
+rm -rf release dist dist-electron
+
+# 3. Tente gerar novamente
+npm run build:win
+
+# 4. Se o erro persistir, tente o build sem empacotamento primeiro
+npm run build:dir
+```
+
+### Problema: "O aplicativo não pode ser executado neste computador"
+**Solução:** O .exe foi compilado para Windows 64-bit. Certifique-se de que está usando Windows 64-bit.
+
+### Problema: Windows Defender bloqueia o instalador
+**Solução:**
+1. Clique em "Mais informações"
+2. Clique em "Executar mesmo assim"
+3. Isso acontece porque o aplicativo não tem assinatura digital (normal para aplicações em desenvolvimento)
 
 ### Problema: "npm: command not found"
 **Solução:** Node.js não está instalado. Volte para [Pré-requisitos](#pré-requisitos).
@@ -207,7 +298,7 @@ taskkill /PID <PID> /F
 lsof -ti:5173 | xargs kill -9
 ```
 
-### Problema: Aplicação não abre
+### Problema: Aplicação não abre (modo dev)
 **Solução:**
 ```bash
 # 1. Verificar se há erros no terminal
@@ -281,12 +372,22 @@ npm run migrate
 ### Build e Deploy
 
 ```bash
-# Compilar para produção
+# Gerar executável Windows (.exe) - RECOMENDADO
+npm run build:win
+
+# Gerar build sem empacotamento (pasta com arquivos)
+npm run build:dir
+
+# Compilar para produção (todas as plataformas configuradas)
 npm run build
 
 # Preview da build de produção
 npm run preview
 ```
+
+**Localização dos arquivos gerados:**
+- Instalador Windows: `release/3D Management Desktop-1.0.0-Setup.exe`
+- Aplicativo desempacotado: `release/win-unpacked/`
 
 ---
 
@@ -316,7 +417,15 @@ Se encontrar problemas não cobertos neste guia:
 
 ## ✅ Checklist Rápido
 
-Para executar pela primeira vez:
+### Para Usuários (Quero apenas usar):
+
+- [ ] Conseguir o arquivo `3D Management Desktop-1.0.0-Setup.exe`
+- [ ] Executar o instalador
+- [ ] Seguir o assistente de instalação
+- [ ] Usar o atalho na Área de Trabalho
+- [ ] Aplicação aberta com sucesso! 🎉
+
+### Para Desenvolvedores (Quero desenvolver):
 
 - [ ] Node.js instalado (v18+)
 - [ ] Código do projeto baixado
@@ -330,6 +439,19 @@ Para executar pela primeira vez:
 
 ## 📝 Resumo Rápido (TL;DR)
 
+### Para Usuários (Gerar .exe):
+```bash
+# Instalação única:
+npm install
+npm run migrate
+
+# Gerar executável Windows:
+npm run build:win
+
+# O instalador estará em: release/3D Management Desktop-1.0.0-Setup.exe
+```
+
+### Para Desenvolvedores (Modo dev):
 ```bash
 # Instalação única:
 npm install

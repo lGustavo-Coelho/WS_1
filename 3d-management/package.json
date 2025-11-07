@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && vite build && electron-builder",
+    "build:win": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && vite build && electron-builder --win",
+    "build:dir": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && vite build && electron-builder --dir",
     "preview": "vite preview",
     "migrate": "knex migrate:latest --knexfile knexfile.ts",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
@@ -70,11 +72,52 @@
     "vitest": "^4.0.7"
   },
   "build": {
+    "appId": "com.3dmanagement.desktop",
+    "productName": "3D Management Desktop",
+    "copyright": "Copyright © 2024",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
     "extraResources": [
       {
         "from": "dist",
         "to": "dist"
       }
-    ]
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "3D Management Desktop"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icon.png",
+      "category": "Office"
+    }
   }
 }
