@@ -3,10 +3,32 @@
 A comprehensive desktop application for managing 3D printing services, built with Electron, React, TypeScript, and SQLite.
 
 > 🇧🇷 **Português:** 
-> - Para instruções de como executar o programa, veja [COMO_EXECUTAR.md](./COMO_EXECUTAR.md)
+> - ⚡ **INÍCIO RÁPIDO:** Execute `setup.bat` (Windows) ou `./setup.sh` (Linux/Mac)
+> - Para instruções completas de como executar o programa, veja [COMO_EXECUTAR.md](./COMO_EXECUTAR.md)
+> - Para resolver problemas, veja [RESOLUCAO_PROBLEMAS.md](./RESOLUCAO_PROBLEMAS.md)
 > - Para gerar executável Windows (.exe), veja [GERAR_EXECUTAVEL_WINDOWS.md](./GERAR_EXECUTAVEL_WINDOWS.md)
 > 
 > 🇺🇸 **English:** For execution instructions in English, continue reading below.
+
+## ⚡ Quick Start
+
+**Cannot run the program?** Use the automated setup script:
+
+**Windows:**
+```bash
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+Then run:
+```bash
+npm run dev
+```
 
 ## Features
 
@@ -34,6 +56,27 @@ A comprehensive desktop application for managing 3D printing services, built wit
 - npm or yarn
 
 ## Getting Started
+
+### Option 1: Automated Setup (Recommended)
+
+**Windows:**
+```bash
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+This will automatically:
+- ✅ Install dependencies
+- ✅ Create .env.local file
+- ✅ Initialize database
+- ✅ Verify setup
+
+### Option 2: Manual Setup
 
 1. **Clone and install dependencies:**
    ```bash
