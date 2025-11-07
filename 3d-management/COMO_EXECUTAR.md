@@ -2,8 +2,42 @@
 
 Este guia explica passo a passo como executar o programa 3D Management Desktop em seu computador.
 
+## ⚡ INÍCIO RÁPIDO (QUICK START)
+
+**Para resolver rapidamente o problema "não consigo executar o programa":**
+
+### Windows:
+```bash
+# Execute o script de configuração automática:
+setup.bat
+```
+
+### Linux/Mac:
+```bash
+# Execute o script de configuração automática:
+chmod +x setup.sh
+./setup.sh
+```
+
+**O script irá automaticamente:**
+1. ✅ Verificar se Node.js está instalado
+2. ✅ Instalar todas as dependências
+3. ✅ Criar arquivo de configuração
+4. ✅ Inicializar banco de dados
+5. ✅ Deixar tudo pronto para executar
+
+**Depois de executar o script, use:**
+```bash
+npm run dev
+```
+
+**❓ Problemas?** Consulte [RESOLUCAO_PROBLEMAS.md](./RESOLUCAO_PROBLEMAS.md)
+
+---
+
 ## 📋 Índice
 
+- [Início Rápido](#-início-rápido-quick-start)
 - [Pré-requisitos](#pré-requisitos)
 - [Instalação](#instalação)
 - [Executando o Programa](#executando-o-programa)
@@ -240,6 +274,20 @@ Você verá:
 ---
 
 ## 🐛 Solução de Problemas
+
+**📖 Para um guia completo de resolução de problemas, consulte: [RESOLUCAO_PROBLEMAS.md](./RESOLUCAO_PROBLEMAS.md)**
+
+Aqui estão algumas soluções rápidas para os problemas mais comuns:
+
+### Problema: Não consigo executar o programa
+**Solução Rápida:** Execute o script de configuração
+```bash
+# Windows:
+setup.bat
+
+# Linux/Mac:
+./setup.sh
+```
 
 ### Problema: Erro ao gerar o .exe (electron-builder)
 **Solução:**
