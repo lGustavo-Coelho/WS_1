@@ -25,13 +25,19 @@ export class DataService {
     }
   }
 
-  async createFilament(data: Omit<Filament, 'id' | 'created_at' | 'updated_at'>) {
+  async createFilament(filament: Filament) {
     try {
-      const filament = await filamentRepository.create(data as any);
-      logger.info('Filament created', { id: (filament as any).id, name: data.name });
-      return filament;
+      await filamentRepository.create(filament as any);
+      const created = await filamentRepository.findById(filament.id);
+
+      if (!created) {
+        throw new Error('Created filament not found');
+      }
+
+      logger.info('Filament created', { id: created.id, name: created.name });
+      return created;
     } catch (error) {
-      logger.error('Failed to create filament', { error, data });
+      logger.error('Failed to create filament', { error, filament });
       throw error;
     }
   }
@@ -40,7 +46,13 @@ export class DataService {
     try {
       await filamentRepository.update(id, data as any);
       logger.info('Filament updated', { id });
-      return await filamentRepository.findById(id);
+      const updated = await filamentRepository.findById(id);
+
+      if (!updated) {
+        throw new Error('Updated filament not found');
+      }
+
+      return updated;
     } catch (error) {
       logger.error('Failed to update filament', { error, id });
       throw error;
@@ -66,13 +78,19 @@ export class DataService {
     }
   }
 
-  async createComponent(data: Omit<Component, 'id' | 'created_at' | 'updated_at'>) {
+  async createComponent(component: Component) {
     try {
-      const component = await componentRepository.create(data as any);
-      logger.info('Component created', { id: (component as any).id, name: data.name });
-      return component;
+      await componentRepository.create(component as any);
+      const created = await componentRepository.findById(component.id);
+
+      if (!created) {
+        throw new Error('Created component not found');
+      }
+
+      logger.info('Component created', { id: created.id, name: created.name });
+      return created;
     } catch (error) {
-      logger.error('Failed to create component', { error, data });
+      logger.error('Failed to create component', { error, component });
       throw error;
     }
   }
@@ -81,7 +99,13 @@ export class DataService {
     try {
       await componentRepository.update(id, data as any);
       logger.info('Component updated', { id });
-      return await componentRepository.findById(id);
+      const updated = await componentRepository.findById(id);
+
+      if (!updated) {
+        throw new Error('Updated component not found');
+      }
+
+      return updated;
     } catch (error) {
       logger.error('Failed to update component', { error, id });
       throw error;
@@ -107,13 +131,19 @@ export class DataService {
     }
   }
 
-  async createPrinter(data: Omit<Printer, 'id' | 'created_at' | 'updated_at'>) {
+  async createPrinter(printer: Printer) {
     try {
-      const printer = await printerRepository.create(data as any);
-      logger.info('Printer created', { id: (printer as any).id, name: data.name });
-      return printer;
+      await printerRepository.create(printer as any);
+      const created = await printerRepository.findById(printer.id);
+
+      if (!created) {
+        throw new Error('Created printer not found');
+      }
+
+      logger.info('Printer created', { id: created.id, name: created.name });
+      return created;
     } catch (error) {
-      logger.error('Failed to create printer', { error, data });
+      logger.error('Failed to create printer', { error, printer });
       throw error;
     }
   }
@@ -122,7 +152,13 @@ export class DataService {
     try {
       await printerRepository.update(id, data as any);
       logger.info('Printer updated', { id });
-      return await printerRepository.findById(id);
+      const updated = await printerRepository.findById(id);
+
+      if (!updated) {
+        throw new Error('Updated printer not found');
+      }
+
+      return updated;
     } catch (error) {
       logger.error('Failed to update printer', { error, id });
       throw error;
@@ -144,6 +180,32 @@ export class DataService {
       return await printerRepository.findAll();
     } catch (error) {
       logger.error('Failed to get printers', { error });
+      throw error;
+    }
+  }
+
+  async getComponentLowStock(threshold: number = 10) {
+    try {
+      return await componentRepository.findLowStock(threshold);
+    } catch (error) {
+      logger.error('Failed to get low stock components', { error });
+      throw error;
+    }
+  }
+
+  async updateComponentStock(id: string, amount: number) {
+    try {
+      await componentRepository.updateStock(id, amount);
+      logger.info('Component stock updated', { id, amount });
+      const updated = await componentRepository.findById(id);
+
+      if (!updated) {
+        throw new Error('Updated component not found after stock change');
+      }
+
+      return updated;
+    } catch (error) {
+      logger.error('Failed to update component stock', { error, id, amount });
       throw error;
     }
   }

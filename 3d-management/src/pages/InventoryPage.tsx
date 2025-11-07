@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Product, Filament, Settings, Printer } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, PackageIcon, ImageIcon } from '../components/Icons';
 
+const EXPECTED_PRINTER_LIFETIME_HOURS = 5000;
+
 const calculateProductCost = (
     productData: Partial<Product>,
     filaments: Filament[],
@@ -15,9 +17,11 @@ const calculateProductCost = (
         return 0;
     }
 
-    const filamentCost = (productData.filamentUsedGrams / 1000) * filament.costPerKg;
-    const energyCost = productData.printingTimeHours * printer.powerConsumptionKW * settings.kwhCost;
-    const depreciationCost = productData.printingTimeHours * printer.hourlyDepreciation;
+    const filamentCost = (productData.filamentUsedGrams / 1000) * filament.cost_per_kg;
+    const printerPowerKw = printer.power_consumption / 1000;
+    const energyCost = productData.printingTimeHours * printerPowerKw * settings.kwhCost;
+    const depreciationPerHour = printer.purchase_price / EXPECTED_PRINTER_LIFETIME_HOURS;
+    const depreciationCost = productData.printingTimeHours * depreciationPerHour;
 
     return filamentCost + energyCost + depreciationCost;
 };
@@ -62,15 +66,12 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => {
-            const newState = { ...prev };
-            const numericFields = ['price', 'stock', 'filamentUsedGrams', 'printingTimeHours'];
-
-            if (numericFields.includes(name)) {
-                newState[name as 'price' | 'stock' | 'filamentUsedGrams' | 'printingTimeHours'] = parseFloat(value) || 0;
-            } else {
-                newState[name as 'name' | 'description' | 'imageUrl' | 'filamentId' | 'printerId'] = value;
+            if (name === 'price' || name === 'stock' || name === 'filamentUsedGrams' || name === 'printingTimeHours') {
+                return { ...prev, [name]: parseFloat(value) || 0 };
             }
-            return newState;
+
+            const key = name as 'name' | 'description' | 'imageUrl' | 'filamentId' | 'printerId';
+            return { ...prev, [key]: value };
         });
     };
 

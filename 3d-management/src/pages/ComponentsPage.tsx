@@ -1,65 +1,91 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Component, Transaction, Settings } from '../types';
-import { PlusIcon, PlusCircleIcon, EditIcon, TrashIcon, ChevronDownIcon } from '../components/Icons';
+import { PlusIcon, PlusCircleIcon, EditIcon, TrashIcon, WrenchIcon } from '../components/Icons';
 import { dataService } from '../services/dataService';
 import { useAppStore } from '../store/appStore';
 import { logger } from '../utils/logger';
 
+const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: 'UTC',
+};
+
+const formatDateInput = (value?: string) => {
+  if (!value) {
+    return new Date().toISOString().split('T')[0];
+  }
+  return value.split('T')[0];
+};
+
 interface ComponentFormModalProps {
   component: Component | null;
-  onSave: (component: Component) => void;
+  onSave: (component: Component) => Promise<void>;
   onClose: () => void;
 }
 
 const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSave, onClose }) => {
-  const [formData, setFormData] = useState<Omit<Component, 'id' | 'created_at' | 'updated_at'>>(
-    component || {
-      name: '',
-      category: 'Hardware',
-      stock: 0,
-      cost_per_unit: 0,
-      supplier: '',
-      purchase_date: new Date().toISOString().split('T')[0],
-      notes: ''
-    }
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const buildInitialState = () => ({
+    name: component?.name ?? '',
+    category: component?.category ?? 'Hardware',
+    stock: component?.stock ?? 0,
+    cost_per_unit: component?.cost_per_unit ?? 0,
+    supplier: component?.supplier ?? '',
+    purchase_date: formatDateInput(component?.purchase_date),
+    notes: component?.notes ?? '',
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => {
-      const updated = { ...prev };
+  const [formData, setFormData] = useState<Omit<Component, 'id' | 'created_at' | 'updated_at'>>(buildInitialState);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setFormData(buildInitialState());
+  }, [component?.id]);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setFormData((previous) => {
       if (name === 'stock' || name === 'cost_per_unit') {
-        updated[name as any] = parseFloat(value) || 0;
-      } else {
-        updated[name as any] = value;
+        return { ...previous, [name]: Number(value) || 0 };
       }
-      return updated;
+      return { ...previous, [name]: value } as typeof previous;
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSaving(true);
+
     try {
-      const componentToSave: Component = { ...formData as any, id: component?.id || `COMP-${Date.now()}` };
-      onSave(componentToSave);
+      const componentToSave: Component = {
+        id: component?.id ?? `COMP-${Date.now()}`,
+        ...formData,
+        purchase_date: formData.purchase_date || undefined,
+      };
+
+      await onSave(componentToSave);
     } catch (error) {
-      logger.error('Error saving component', { error });
+      logger.error('Failed to submit component form', { error });
       alert('Erro ao salvar componente');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md" onClick={(event) => event.stopPropagation()}>
         <h2 className="text-2xl font-bold text-gray-100 mb-6">{component ? 'Editar Componente' : 'Adicionar Componente'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300">Nome do Componente</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Ex: Parafuso M3x8" className="mt-1 w-full" required />
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Ex: Parafuso M3x8"
+              className="mt-1 w-full"
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -73,13 +99,22 @@ const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSa
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300">Estoque</label>
-              <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="mt-1 w-full" required />
+              <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="mt-1 w-full" min={0} required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300">Custo/Unit (R$)</label>
-              <input type="number" step="0.01" name="cost_per_unit" value={formData.cost_per_unit} onChange={handleChange} className="mt-1 w-full" required />
+              <label className="block text-sm font-medium text-gray-300">Custo por Unidade (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                name="cost_per_unit"
+                value={formData.cost_per_unit}
+                onChange={handleChange}
+                className="mt-1 w-full"
+                min={0}
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300">Fornecedor</label>
@@ -88,18 +123,18 @@ const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSa
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">Data da Compra</label>
-            <input type="date" name="purchase_date" value={formData.purchase_date} onChange={handleChange} className="mt-1 w-full" required />
+            <input type="date" name="purchase_date" value={formData.purchase_date || ''} onChange={handleChange} className="mt-1 w-full" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">Notas</label>
             <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Observações..." className="mt-1 w-full h-20" />
           </div>
           <div className="flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition" disabled={isLoading}>
+            <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition" disabled={isSaving}>
               Cancelar
             </button>
-            <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition disabled:opacity-50" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : 'Salvar'}
+            <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition disabled:opacity-50" disabled={isSaving}>
+              {isSaving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>
@@ -110,63 +145,80 @@ const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSa
 
 interface ComponentPurchaseModalProps {
   components: Component[];
-  onSave: (data: { componentId: string; quantity: number; costPerUnit: number; purchaseDate: string }) => void;
+  onSave: (data: { componentId: string; quantity: number; costPerUnit: number; purchaseDate: string }) => Promise<void>;
   onClose: () => void;
 }
 
 const ComponentPurchaseModal: React.FC<ComponentPurchaseModalProps> = ({ components, onSave, onClose }) => {
-  const [componentId, setComponentId] = useState<string>(components[0]?.id || '');
+  const [componentId, setComponentId] = useState<string>(components[0]?.id ?? '');
   const [quantity, setQuantity] = useState(1);
   const [costPerUnit, setCostPerUnit] = useState(0);
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!componentId) {
-            alert('Por favor, selecione um componente.');
-            return;
-        }
-        onSave({ componentId, quantity, costPerUnit, purchaseDate });
-    };
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md">
-                <h2 className="text-2xl font-bold text-gray-100 mb-6">Registrar Compra de Componente</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">Componente</label>
-                        <select value={componentId} onChange={(e) => setComponentId(e.target.value)} className="mt-1" required>
-                            <option value="">Selecione um componente...</option>
-                            {components.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300">Quantidade Comprada</label>
-                            <input type="number" value={quantity} onChange={e => setQuantity(parseInt(e.target.value) || 0)} className="mt-1" required />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300">Custo por Unidade (R$)</label>
-                            <input type="number" step="0.01" value={costPerUnit} onChange={e => setCostPerUnit(parseFloat(e.target.value) || 0)} className="mt-1" required />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">Data da Compra (Opcional)</label>
-                        <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} className="mt-1" />
-                    </div>
-                    <div className="flex justify-end space-x-4 pt-4">
-                        <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition">Cancelar</button>
-                        <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition">Registrar Compra</button>
-                    </div>
-                </form>
+    if (!componentId) {
+      alert('Selecione um componente antes de registrar a compra.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave({ componentId, quantity, costPerUnit, purchaseDate });
+    } catch (error) {
+      logger.error('Failed to register component purchase', { error });
+      alert('Erro ao registrar compra');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md" onClick={(event) => event.stopPropagation()}>
+        <h2 className="text-2xl font-bold text-gray-100 mb-6">Registrar Compra de Componente</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300">Componente</label>
+            <select value={componentId} onChange={(event) => setComponentId(event.target.value)} className="mt-1 w-full" required>
+              <option value="">Selecione um componente...</option>
+              {components.map((component) => (
+                <option key={component.id} value={component.id}>
+                  {component.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300">Quantidade Comprada</label>
+              <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(Number(event.target.value) || 0)} className="mt-1 w-full" required />
             </div>
-        </div>
-    );
+            <div>
+              <label className="block text-sm font-medium text-gray-300">Custo por Unidade (R$)</label>
+              <input type="number" min={0} step="0.01" value={costPerUnit} onChange={(event) => setCostPerUnit(Number(event.target.value) || 0)} className="mt-1 w-full" required />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">Data da Compra</label>
+            <input type="date" value={purchaseDate} onChange={(event) => setPurchaseDate(event.target.value)} className="mt-1 w-full" required />
+          </div>
+          <div className="flex justify-end space-x-4 pt-4">
+            <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition" disabled={isSaving}>
+              Cancelar
+            </button>
+            <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition disabled:opacity-50" disabled={isSaving}>
+              {isSaving ? 'Registrando...' : 'Registrar Compra'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
-// Main Page Component
 interface ComponentsPageProps {
   components: Component[];
   setComponents: React.Dispatch<React.SetStateAction<Component[]>>;
@@ -175,148 +227,217 @@ interface ComponentsPageProps {
 }
 
 const ComponentsPage: React.FC<ComponentsPageProps> = ({ components, setComponents, setTransactions, settings }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<Component | null>(null);
-  const [filter, setFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+  const { setLoading, setError } = useAppStore();
 
-  const filteredComponents = useMemo(() => {
-    return components.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
-  }, [components, filter]);
-
-  const handleSaveComponent = (component: Component, isNew: boolean) => {
-    if (isNew) {
-      setComponents(prev => [component, ...prev]);
-      // Create initial purchase transaction if stock is added
-      if (component.stock > 0 && component.costPerUnit > 0) {
-        const totalCost = component.stock * component.costPerUnit;
-        const newTransaction: Transaction = {
-            id: `TRN-COMP-${Date.now()}`,
-            date: new Date(component.purchaseDate || Date.now()).toISOString(),
-            description: `Compra inicial de componente: ${component.name}`,
-            amount: totalCost,
-            type: 'expense',
-            category: 'Compra de Suprimento',
-        };
-        setTransactions(prev => [newTransaction, ...prev]);
+  useEffect(() => {
+    const loadComponents = async () => {
+      setLoading(true);
+      try {
+        const data = await dataService.getComponents();
+        setComponents(data);
+        setError(null);
+      } catch (error) {
+        logger.error('Failed to load components', { error });
+        setError('Erro ao carregar componentes');
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setComponents(prev => prev.map(c => c.id === component.id ? component : c));
+    };
+
+    if (components.length === 0) {
+      loadComponents();
     }
-    closeAddModal();
-  };
-  
-  const handleDeleteComponent = (componentId: string) => {
-    if(window.confirm('Tem certeza que deseja excluir este componente?')) {
-        setComponents(prev => prev.filter(c => c.id !== componentId));
+  }, []);
+
+  const filteredComponents = useMemo(
+    () =>
+      components.filter((component) =>
+        nameFilter ? component.name.toLowerCase().includes(nameFilter.toLowerCase()) : true
+      ),
+    [components, nameFilter]
+  );
+
+  const handleSaveComponent = async (component: Component) => {
+    setLoading(true);
+    try {
+      if (editingComponent) {
+        const updated = await dataService.updateComponent(component.id, component);
+        setComponents((previous) => previous.map((item) => (item.id === updated.id ? updated : item)));
+      } else {
+        const created = await dataService.createComponent(component);
+        setComponents((previous) => [...previous, created]);
+      }
+
+      setError(null);
+      setIsFormModalOpen(false);
+      setEditingComponent(null);
+    } catch (error) {
+      logger.error('Failed to persist component', { error });
+      setError('Erro ao salvar componente');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRegisterPurchase = (data: { componentId: string; quantity: number; costPerUnit: number; purchaseDate: string }) => {
-    const selectedComponent = components.find(c => c.id === data.componentId);
-    if (!selectedComponent) return;
+  const handleDeleteComponent = async (componentId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este componente?')) {
+      return;
+    }
 
-    setComponents(prev => prev.map(c =>
-        c.id === data.componentId
-        ? { ...c, stock: c.stock + data.quantity, costPerUnit: data.costPerUnit, purchaseDate: new Date(data.purchaseDate).toISOString() }
-        : c
-    ));
+    setLoading(true);
+    try {
+      await dataService.deleteComponent(componentId);
+      setComponents((previous) => previous.filter((component) => component.id !== componentId));
+      setError(null);
+    } catch (error) {
+      logger.error('Failed to delete component', { error });
+      setError('Erro ao excluir componente');
+      alert('Erro ao excluir componente');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const totalCost = data.quantity * data.costPerUnit;
-    const newTransaction: Transaction = {
+  const handleRegisterPurchase = async (data: { componentId: string; quantity: number; costPerUnit: number; purchaseDate: string }) => {
+    setLoading(true);
+    try {
+      const selected = components.find((component) => component.id === data.componentId);
+
+      if (!selected) {
+        throw new Error('Component not found for purchase');
+      }
+
+      const updated = await dataService.updateComponent(data.componentId, {
+        stock: selected.stock + data.quantity,
+        cost_per_unit: data.costPerUnit,
+        purchase_date: data.purchaseDate,
+      });
+
+      setComponents((previous) => previous.map((component) => (component.id === updated.id ? updated : component)));
+
+      const totalCost = data.quantity * data.costPerUnit;
+      const transaction: Transaction = {
         id: `TRN-COMP-${Date.now()}`,
         date: new Date(data.purchaseDate).toISOString(),
-        description: `Compra de componente: ${selectedComponent.name} (x${data.quantity})`,
+        description: `Compra de componente: ${updated.name} (x${data.quantity})`,
         amount: totalCost,
         type: 'expense',
         category: 'Compra de Suprimento',
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
+      };
 
-    setIsPurchaseModalOpen(false);
+      setTransactions((previous) => [transaction, ...previous]);
+      setError(null);
+      setIsPurchaseModalOpen(false);
+    } catch (error) {
+      logger.error('Failed to register component purchase', { error });
+      setError('Erro ao registrar compra de componente');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const openAddModal = (component: Component | null = null) => {
+  const openFormModal = (component: Component | null = null) => {
     setEditingComponent(component);
-    setIsAddModalOpen(true);
-  };
-
-  const closeAddModal = () => {
-    setEditingComponent(null);
-    setIsAddModalOpen(false);
+    setIsFormModalOpen(true);
   };
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: settings.currency }).format(value);
-  const formatDate = (dateString?: string) => dateString ? new Date(dateString).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+  const formatDate = (value?: string) => (value ? new Date(value).toLocaleDateString('pt-BR', DATE_FORMAT_OPTIONS) : '—');
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <input 
-          type="text" 
-          placeholder="Filtrar por nome..." 
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
+        <input
+          type="text"
+          placeholder="Filtrar por nome..."
+          value={nameFilter}
+          onChange={(event) => setNameFilter(event.target.value)}
           className="w-full md:w-64"
         />
         <div className="flex items-center space-x-3 w-full md:w-auto">
-            <button onClick={() => setIsPurchaseModalOpen(true)} className="flex-1 md:flex-initial w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
-              <PlusCircleIcon className="h-5 w-5 mr-2" />
-              Registrar Compra
-            </button>
-            <button onClick={() => openAddModal()} className="flex-1 md:flex-initial w-full flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition">
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Novo Componente
-            </button>
+          <button
+            onClick={() => setIsPurchaseModalOpen(true)}
+            className="flex-1 md:flex-initial w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
+          >
+            <PlusCircleIcon className="h-5 w-5 mr-2" />
+            Registrar Compra
+          </button>
+          <button
+            onClick={() => openFormModal()}
+            className="flex-1 md:flex-initial w-full flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Novo Componente
+          </button>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-          <table className="w-full text-left">
+        <table className="w-full text-left">
           <thead>
-              <tr className="bg-gray-700/50 text-sm text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-6 font-medium">Nome</th>
-                <th className="py-3 px-6 font-medium">Unidade</th>
-                <th className="py-3 px-6 font-medium">Estoque</th>
-                <th className="py-3 px-6 font-medium">Custo</th>
-                <th className="py-3 px-6 font-medium">Fornecedor</th>
-                <th className="py-3 px-6 font-medium">Data Compra</th>
-                <th className="py-3 px-6 font-medium text-center">Ações</th>
-              </tr>
+            <tr className="bg-gray-700/50 text-sm text-gray-400 uppercase tracking-wider">
+              <th className="py-3 px-6 font-medium">Nome</th>
+              <th className="py-3 px-6 font-medium">Categoria</th>
+              <th className="py-3 px-6 font-medium">Estoque</th>
+              <th className="py-3 px-6 font-medium">Custo Unitário</th>
+              <th className="py-3 px-6 font-medium">Fornecedor</th>
+              <th className="py-3 px-6 font-medium">Última Compra</th>
+              <th className="py-3 px-6 font-medium">Notas</th>
+              <th className="py-3 px-6 font-medium text-center">Ações</th>
+            </tr>
           </thead>
           <tbody className="text-gray-300">
             {filteredComponents.length > 0 ? (
-                filteredComponents.map(c => (
-                    <tr key={c.id} className="border-b border-gray-700 hover:bg-gray-700">
-                        <td className="py-4 px-6 font-medium text-gray-100">{c.name}</td>
-                        <td className="py-4 px-6">{c.unit}</td>
-                        <td className="py-4 px-6 font-semibold">{c.stock}</td>
-                        <td className="py-4 px-6">{formatCurrency(c.costPerUnit)}</td>
-                        <td className="py-4 px-6">{c.supplier || 'N/A'}</td>
-                        <td className="py-4 px-6">{formatDate(c.purchaseDate)}</td>
-                        <td className="py-4 px-6">
-                            <div className="flex items-center justify-center space-x-3">
-                                <button onClick={() => openAddModal(c)} className="text-blue-400 hover:text-blue-300"><EditIcon className="h-5 w-5" /></button>
-                                <button onClick={() => handleDeleteComponent(c.id)} className="text-red-400 hover:text-red-300"><TrashIcon className="h-5 w-5" /></button>
-                            </div>
-                        </td>
-                    </tr>
-                ))
-            ) : (
-                <tr>
-                  <td colSpan={7} className="text-center py-20 text-gray-500">
-                    <WrenchIcon className="h-16 w-16 mx-auto text-gray-400" />
-                    <h3 className="mt-2 text-lg font-medium">Nenhum componente cadastrado</h3>
-                    <p className="text-sm">Comece adicionando seus componentes (parafusos, eletrônicos, etc.)</p>
+              filteredComponents.map((component) => (
+                <tr key={component.id} className="border-b border-gray-700 hover:bg-gray-700">
+                  <td className="py-4 px-6 font-medium text-gray-100">{component.name}</td>
+                  <td className="py-4 px-6">{component.category}</td>
+                  <td className="py-4 px-6 font-semibold">{component.stock}</td>
+                  <td className="py-4 px-6">{formatCurrency(component.cost_per_unit)}</td>
+                  <td className="py-4 px-6">{component.supplier ?? '—'}</td>
+                  <td className="py-4 px-6">{formatDate(component.purchase_date)}</td>
+                  <td className="py-4 px-6">{component.notes ?? '—'}</td>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center justify-center space-x-3">
+                      <button onClick={() => openFormModal(component)} className="text-blue-400 hover:text-blue-300">
+                        <EditIcon className="h-5 w-5" />
+                      </button>
+                      <button onClick={() => handleDeleteComponent(component.id)} className="text-red-400 hover:text-red-300">
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="text-center py-20 text-gray-500">
+                  <WrenchIcon className="h-16 w-16 mx-auto text-gray-400" />
+                  <h3 className="mt-2 text-lg font-medium">Nenhum componente cadastrado</h3>
+                  <p className="text-sm">Adicione um componente para começar a acompanhar custos e estoque.</p>
+                </td>
+              </tr>
             )}
           </tbody>
-          </table>
+        </table>
       </div>
 
-      {isAddModalOpen && <ComponentFormModal component={editingComponent} onSave={handleSaveComponent} onClose={closeAddModal} />}
-      {isPurchaseModalOpen && <ComponentPurchaseModal components={components} onSave={handleRegisterPurchase} onClose={() => setIsPurchaseModalOpen(false)} />}
+      {isFormModalOpen && (
+        <ComponentFormModal component={editingComponent} onSave={handleSaveComponent} onClose={() => setIsFormModalOpen(false)} />
+      )}
+      {isPurchaseModalOpen && (
+        <ComponentPurchaseModal
+          components={components}
+          onSave={handleRegisterPurchase}
+          onClose={() => setIsPurchaseModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

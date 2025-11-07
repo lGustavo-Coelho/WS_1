@@ -42,8 +42,8 @@ const PrintJobFormModal: React.FC<PrintJobFormModalProps> = ({ onSave, onClose, 
             alert('Por favor, selecione uma impressora e um filamento.');
             return;
         }
-        if (selectedFilament && selectedFilament.stock < formData.filamentUsedGrams) {
-            alert(`Estoque de filamento insuficiente. Disponível: ${selectedFilament.stock}g`);
+        if (selectedFilament && selectedFilament.stock_kg * 1000 < formData.filamentUsedGrams) {
+          alert(`Estoque de filamento insuficiente. Disponível: ${(selectedFilament.stock_kg * 1000).toFixed(0)}g`);
             return;
         }
         onSave(formData);
@@ -70,7 +70,7 @@ const PrintJobFormModal: React.FC<PrintJobFormModalProps> = ({ onSave, onClose, 
                             <label className="block text-sm font-medium text-gray-300">Filamento</label>
                             <select name="filamentId" value={formData.filamentId} onChange={handleChange} className="mt-1" required>
                                 <option value="">Selecione...</option>
-                                {filaments.map(f => <option key={f.id} value={f.id}>{f.name} ({f.stock}g)</option>)}
+                                {filaments.map(f => <option key={f.id} value={f.id}>{f.name} ({Math.round(f.stock_kg * 1000)}g)</option>)}
                             </select>
                         </div>
                     </div>
@@ -136,7 +136,7 @@ const PrintJobsPage: React.FC<PrintJobsPageProps> = ({ printJobs, setPrintJobs, 
 
     // 2. Update printer status
     setPrinters(prevPrinters => prevPrinters.map(p => 
-        p.id === newJob.printerId ? { ...p, status: 'Imprimindo' } : p
+    p.id === newJob.printerId ? { ...p, status: 'Imprimindo' } : p
     ));
 
     setIsModalOpen(false);
@@ -152,20 +152,25 @@ const PrintJobsPage: React.FC<PrintJobsPageProps> = ({ printJobs, setPrintJobs, 
     ));
 
     // 2. Update printer status back to idle and add printed hours
-    setPrinters(prev => prev.map(p => 
-        p.id === job.printerId 
-            ? { 
-                ...p, 
-                status: 'Ociosa', 
-                printedHours: newStatus === 'completed' ? p.printedHours + job.durationHours : p.printedHours 
-              } 
-            : p
-    ));
+    setPrinters(prev => prev.map(p => {
+      if (p.id !== job.printerId) {
+        return p;
+      }
+
+      const currentHours = p.total_print_hours ?? 0;
+      return {
+        ...p,
+        status: 'Ociosa',
+        total_print_hours: newStatus === 'completed' ? currentHours + job.durationHours : currentHours,
+      };
+    }));
 
     // 3. If completed, update filament stock
     if (newStatus === 'completed') {
         setFilaments(prev => prev.map(f => 
-            f.id === job.filamentId ? { ...f, stock: f.stock - job.filamentUsedGrams } : f
+        f.id === job.filamentId
+        ? { ...f, stock_kg: Math.max(f.stock_kg - job.filamentUsedGrams / 1000, 0) }
+        : f
         ));
     }
   };

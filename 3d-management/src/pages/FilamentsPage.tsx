@@ -12,6 +12,8 @@ interface FilamentFormModalProps {
 }
 
 const FilamentFormModal: React.FC<FilamentFormModalProps> = ({ filament, onSave, onClose }) => {
+  type FilamentFormFields = keyof Omit<Filament, 'id' | 'created_at' | 'updated_at'>;
+
   const [formData, setFormData] = useState<Omit<Filament, 'id' | 'created_at' | 'updated_at'>>(
     filament || { 
       name: '', 
@@ -28,16 +30,18 @@ const FilamentFormModal: React.FC<FilamentFormModalProps> = ({ filament, onSave,
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
     setFormData(prev => {
-      const updated = { ...prev };
-      if (['stock_kg', 'cost_per_kg', 'density'].includes(name)) {
-        updated[name as any] = parseFloat(value) || 0;
-      } else if (name === 'type') {
-        updated[name as any] = value as FilamentType;
-      } else {
-        updated[name as any] = value;
+      if (name === 'stock_kg' || name === 'cost_per_kg' || name === 'density') {
+        return { ...prev, [name]: parseFloat(value) || 0 };
       }
-      return updated;
+
+      if (name === 'type') {
+        return { ...prev, type: value as FilamentType };
+      }
+
+      const key = name as FilamentFormFields;
+      return { ...prev, [key]: value };
     });
   };
 
@@ -238,11 +242,11 @@ const FilamentsPage: React.FC<FilamentsPageProps> = ({ filaments, setFilaments, 
     setLoading(true);
     try {
       if (editingFilament) {
-        await dataService.updateFilament(filament.id, filament);
-        setFilaments(filaments.map(f => f.id === filament.id ? filament : f));
+        const updated = await dataService.updateFilament(filament.id, filament);
+        setFilaments(prev => prev.map(f => (f.id === updated.id ? updated : f)));
       } else {
-        const newFilament = await dataService.createFilament(filament as any);
-        setFilaments([...filaments, newFilament]);
+        const created = await dataService.createFilament(filament);
+        setFilaments(prev => [...prev, created]);
       }
       setError(null);
       closeModal();
@@ -278,15 +282,14 @@ const FilamentsPage: React.FC<FilamentsPageProps> = ({ filaments, setFilaments, 
       const selectedFilament = filaments.find(f => f.id === data.filamentId);
       if (!selectedFilament) return;
 
-      const updatedFilament: Filament = {
-        ...selectedFilament,
+      const updatePayload: Partial<Filament> = {
         stock_kg: selectedFilament.stock_kg + data.weightKg,
         cost_per_kg: data.costPerKg,
         purchase_date: data.purchaseDate,
       };
 
-      await dataService.updateFilament(data.filamentId, updatedFilament);
-      setFilaments(prev => prev.map(f => f.id === data.filamentId ? updatedFilament : f));
+      const updated = await dataService.updateFilament(data.filamentId, updatePayload);
+      setFilaments(prev => prev.map(f => (f.id === updated.id ? updated : f)));
 
       const totalCost = data.weightKg * data.costPerKg;
       const newTransaction: Transaction = {

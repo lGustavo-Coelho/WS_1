@@ -10,6 +10,8 @@ interface QuoteCalculatorModalProps {
     printers: Printer[];
 }
 
+const EXPECTED_PRINTER_LIFETIME_HOURS = 5000;
+
 const QuoteCalculatorModal: React.FC<QuoteCalculatorModalProps> = ({ onClose, onSave, settings, filaments, printers }) => {
     const [customerName, setCustomerName] = useState('');
     const [designHours, setDesignHours] = useState(0);
@@ -31,9 +33,11 @@ const QuoteCalculatorModal: React.FC<QuoteCalculatorModalProps> = ({ onClose, on
 
             if (!filament || !printer) return { ...item, price: 0 };
 
-            const materialCost = (item.filamentGrams / 1000) * filament.costPerKg;
-            const energyCost = item.printHours * printer.powerConsumptionKW * settings.kwhCost;
-            const depreciationCost = item.printHours * printer.hourlyDepreciation;
+            const materialCost = (item.filamentGrams / 1000) * filament.cost_per_kg;
+            const printerPowerKw = printer.power_consumption / 1000;
+            const energyCost = item.printHours * printerPowerKw * settings.kwhCost;
+            const depreciationPerHour = printer.purchase_price / EXPECTED_PRINTER_LIFETIME_HOURS;
+            const depreciationCost = item.printHours * depreciationPerHour;
             const postProcessingCost = item.postProcessingHours * settings.postProcessingHourlyRate;
             
             const machineCost = energyCost + depreciationCost;
@@ -231,8 +235,9 @@ const QuotesPage: React.FC<QuotesPageProps> = ({ quotes, setQuotes, settings, fi
 
         for (const filamentId in filamentNeeded) {
             const filament = filaments.find(f => f.id === filamentId);
-            if (!filament || filament.stock < filamentNeeded[filamentId]) {
-                alert(`Estoque insuficiente para o filamento ${filament?.name || 'desconhecido'}. Necessário: ${filamentNeeded[filamentId]}g, Disponível: ${filament?.stock || 0}g.`);
+            const availableGrams = filament ? Math.round(filament.stock_kg * 1000) : 0;
+            if (!filament || availableGrams < filamentNeeded[filamentId]) {
+                alert(`Estoque insuficiente para o filamento ${filament?.name || 'desconhecido'}. Necessário: ${filamentNeeded[filamentId]}g, Disponível: ${availableGrams}g.`);
                 return;
             }
         }
