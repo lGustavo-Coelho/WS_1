@@ -99,7 +99,6 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
       "artifactName": "${productName}-${version}-Setup.${ext}"
     },
     "nsis": {
@@ -111,12 +110,10 @@
     },
     "mac": {
       "target": ["dmg"],
-      "icon": "build/icon.icns",
       "category": "public.app-category.business"
     },
     "linux": {
       "target": ["AppImage"],
-      "icon": "build/icon.png",
       "category": "Office"
     }
   }

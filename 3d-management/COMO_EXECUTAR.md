@@ -214,7 +214,6 @@ npm run lint
 # Gerar executável para distribuir
 npm run build:win
 ```
-```
 
 ---
 
