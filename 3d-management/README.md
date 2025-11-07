@@ -2,6 +2,12 @@
 
 A comprehensive desktop application for managing 3D printing services, built with Electron, React, TypeScript, and SQLite.
 
+> 🇧🇷 **Português:** 
+> - Para instruções de como executar o programa, veja [COMO_EXECUTAR.md](./COMO_EXECUTAR.md)
+> - Para gerar executável Windows (.exe), veja [GERAR_EXECUTAVEL_WINDOWS.md](./GERAR_EXECUTAVEL_WINDOWS.md)
+> 
+> 🇺🇸 **English:** For execution instructions in English, continue reading below.
+
 ## Features
 
 - 📊 Dashboard with real-time metrics
