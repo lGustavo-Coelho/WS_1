@@ -10,8 +10,12 @@ const config: { [key: string]: Knex.Config } = {
     migrations: {
       directory: './src/db/migrations'
     },
+    seeds: {
+      directory: './src/db/seeds',
+      extension: 'ts'
+    },
     useNullAsDefault: true
   }
 };
 
-module.exports = config;
+export default config;
