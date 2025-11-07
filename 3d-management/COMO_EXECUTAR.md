@@ -217,11 +217,13 @@ npm run build
 npm run dev
 ```
 
-### Problema: Erro de permissão (Linux/Mac)
+### Problema: Erro de permissão ao executar scripts (Linux/Mac)
 **Solução:**
 ```bash
-# Dar permissão de execução:
-chmod +x start-3d-management-dev.bat
+# Se você criou scripts personalizados, pode ser necessário dar permissão:
+chmod +x nome-do-script.sh
+
+# O arquivo .bat é apenas para Windows e não precisa de chmod
 ```
 
 ---
