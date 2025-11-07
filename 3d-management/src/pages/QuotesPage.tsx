@@ -14,7 +14,7 @@ const EXPECTED_PRINTER_LIFETIME_HOURS = 5000;
 
 // Helper to create initial quote item
 const createInitialQuoteItem = (filaments: Filament[], printers: Printer[]): QuoteItem => ({
-    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     description: '',
     filamentGrams: 0,
     printHours: 0,

@@ -27,6 +27,7 @@ export class DataService {
 
   async createFilament(filament: Filament) {
     try {
+      // Type assertion needed to match repository interface expecting id with data
       await filamentRepository.create(filament as Omit<Filament, 'id'> & { id: string });
       const created = await filamentRepository.findById(filament.id);
 
@@ -80,6 +81,7 @@ export class DataService {
 
   async createComponent(component: Component) {
     try {
+      // Type assertion needed to match repository interface expecting id with data
       await componentRepository.create(component as Omit<Component, 'id'> & { id: string });
       const created = await componentRepository.findById(component.id);
 
@@ -133,6 +135,7 @@ export class DataService {
 
   async createPrinter(printer: Printer) {
     try {
+      // Type assertion needed to match repository interface expecting id with data
       await printerRepository.create(printer as Omit<Printer, 'id'> & { id: string });
       const created = await printerRepository.findById(printer.id);
 
