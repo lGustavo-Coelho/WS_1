@@ -1,82 +1,106 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Component, Transaction, Settings } from '../types';
-import { PlusIcon, PlusCircleIcon, EditIcon, TrashIcon, WrenchIcon } from '../components/Icons';
+import { PlusIcon, PlusCircleIcon, EditIcon, TrashIcon, ChevronDownIcon } from '../components/Icons';
+import { dataService } from '../services/dataService';
+import { useAppStore } from '../store/appStore';
+import { logger } from '../utils/logger';
 
-// Modal for Adding/Editing a Component
 interface ComponentFormModalProps {
   component: Component | null;
-  onSave: (component: Component, isNew: boolean) => void;
+  onSave: (component: Component) => void;
   onClose: () => void;
 }
 
 const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSave, onClose }) => {
-  const [formData, setFormData] = useState<Omit<Component, 'id'>>(
+  const [formData, setFormData] = useState<Omit<Component, 'id' | 'created_at' | 'updated_at'>>(
     component || {
       name: '',
-      unit: '',
+      category: 'Hardware',
       stock: 0,
-      costPerUnit: 0,
+      cost_per_unit: 0,
       supplier: '',
-      purchaseDate: new Date().toISOString().split('T')[0]
+      purchase_date: new Date().toISOString().split('T')[0],
+      notes: ''
     }
   );
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
-        const newValues = { ...prev };
-        if (name === 'stock' || name === 'costPerUnit') {
-            newValues[name] = parseFloat(value) || 0;
-        } else {
-            newValues[name as 'name' | 'unit' | 'supplier' | 'purchaseDate'] = value;
-        }
-        return newValues;
+      const updated = { ...prev };
+      if (name === 'stock' || name === 'cost_per_unit') {
+        updated[name as any] = parseFloat(value) || 0;
+      } else {
+        updated[name as any] = value;
+      }
+      return updated;
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isNew = !component;
-    const componentToSave = { ...formData, id: component?.id || `COMP-${Date.now()}` };
-    onSave(componentToSave, isNew);
+    setIsLoading(true);
+    try {
+      const componentToSave: Component = { ...formData as any, id: component?.id || `COMP-${Date.now()}` };
+      onSave(componentToSave);
+    } catch (error) {
+      logger.error('Error saving component', { error });
+      alert('Erro ao salvar componente');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-lg">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-gray-100 mb-6">{component ? 'Editar Componente' : 'Adicionar Componente'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300">Nome do Componente</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} className="mt-1" required />
+            <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Ex: Parafuso M3x8" className="mt-1 w-full" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300">Unidade (ex: peça, metro, kit)</label>
-              <input type="text" name="unit" value={formData.unit} onChange={handleChange} className="mt-1" required />
+              <label className="block text-sm font-medium text-gray-300">Categoria</label>
+              <select name="category" value={formData.category} onChange={handleChange} className="mt-1 w-full">
+                <option value="Hardware">Hardware</option>
+                <option value="Eletrônico">Eletrônico</option>
+                <option value="Acessório">Acessório</option>
+                <option value="Outro">Outro</option>
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300">Quantidade em Estoque</label>
-              <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="mt-1" required />
+              <label className="block text-sm font-medium text-gray-300">Estoque</label>
+              <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="mt-1 w-full" required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <div>
-              <label className="block text-sm font-medium text-gray-300">Custo por Unidade (R$)</label>
-              <input type="number" step="0.01" name="costPerUnit" value={formData.costPerUnit} onChange={handleChange} className="mt-1" required />
+            <div>
+              <label className="block text-sm font-medium text-gray-300">Custo/Unit (R$)</label>
+              <input type="number" step="0.01" name="cost_per_unit" value={formData.cost_per_unit} onChange={handleChange} className="mt-1 w-full" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300">Fornecedor (Opcional)</label>
-              <input type="text" name="supplier" value={formData.supplier} onChange={handleChange} className="mt-1" />
+              <label className="block text-sm font-medium text-gray-300">Fornecedor</label>
+              <input type="text" name="supplier" value={formData.supplier} onChange={handleChange} className="mt-1 w-full" />
             </div>
           </div>
           <div>
-              <label className="block text-sm font-medium text-gray-300">Data de Compra (Opcional)</label>
-              <input type="date" name="purchaseDate" value={formData.purchaseDate} onChange={handleChange} className="mt-1" />
+            <label className="block text-sm font-medium text-gray-300">Data da Compra</label>
+            <input type="date" name="purchase_date" value={formData.purchase_date} onChange={handleChange} className="mt-1 w-full" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">Notas</label>
+            <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Observações..." className="mt-1 w-full h-20" />
           </div>
           <div className="flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition">Cancelar</button>
-            <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition">Salvar</button>
+            <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-600 hover:bg-gray-500 text-gray-200 font-semibold rounded-md transition" disabled={isLoading}>
+              Cancelar
+            </button>
+            <button type="submit" className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md transition disabled:opacity-50" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : 'Salvar'}
+            </button>
           </div>
         </form>
       </div>
@@ -84,7 +108,6 @@ const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSa
   );
 };
 
-// Modal for Registering a Purchase
 interface ComponentPurchaseModalProps {
   components: Component[];
   onSave: (data: { componentId: string; quantity: number; costPerUnit: number; purchaseDate: string }) => void;
@@ -92,12 +115,13 @@ interface ComponentPurchaseModalProps {
 }
 
 const ComponentPurchaseModal: React.FC<ComponentPurchaseModalProps> = ({ components, onSave, onClose }) => {
-    const [componentId, setComponentId] = useState<string>(components[0]?.id || '');
-    const [quantity, setQuantity] = useState(1);
-    const [costPerUnit, setCostPerUnit] = useState(0);
-    const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [componentId, setComponentId] = useState<string>(components[0]?.id || '');
+  const [quantity, setQuantity] = useState(1);
+  const [costPerUnit, setCostPerUnit] = useState(0);
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!componentId) {
             alert('Por favor, selecione um componente.');
