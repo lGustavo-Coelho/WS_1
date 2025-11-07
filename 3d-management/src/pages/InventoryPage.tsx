@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product, Filament, Settings, Printer } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, PackageIcon, ImageIcon } from '../components/Icons';
 
@@ -50,23 +50,24 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
             imageUrl: '',
         }
     );
+    const [isPriceManuallySet, setIsPriceManuallySet] = useState(!!product?.price);
     
     const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: settings.currency }).format(value);
 
     const productionCost = useMemo(() => calculateProductCost(formData, filaments, printers, settings), [formData, filaments, printers, settings]);
     const suggestedPrice = useMemo(() => productionCost * (1 + settings.profitMargin / 100), [productionCost, settings.profitMargin]);
 
-    useEffect(() => {
-      // Auto-update price if it's 0 or matches the old suggested price
-      if (suggestedPrice > 0 && (formData.price === 0 || !product)) {
-         setFormData(prev => ({ ...prev, price: suggestedPrice }));
-      }
-    }, [suggestedPrice, product, formData.price]);
+    // Use suggested price if price hasn't been manually set
+    const displayPrice = isPriceManuallySet ? formData.price : suggestedPrice;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => {
-            if (name === 'price' || name === 'stock' || name === 'filamentUsedGrams' || name === 'printingTimeHours') {
+            if (name === 'price') {
+                setIsPriceManuallySet(true);
+                return { ...prev, price: parseFloat(value) || 0 };
+            }
+            if (name === 'stock' || name === 'filamentUsedGrams' || name === 'printingTimeHours') {
                 return { ...prev, [name]: parseFloat(value) || 0 };
             }
 
@@ -77,7 +78,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const productToSave = { ...formData, id: product?.id || `PROD-${Date.now()}` };
+        const productToSave = { ...formData, price: displayPrice, id: product?.id || `PROD-${Date.now()}` };
         onSave(productToSave);
     };
 
@@ -129,7 +130,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onSave, on
                                         <label className="block text-sm font-medium text-gray-300">Preço de Venda Final</label>
                                         <div className="relative mt-1">
                                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-400 sm:text-sm">R$</span></div>
-                                            <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="pl-10" />
+                                            <input type="number" step="0.01" name="price" value={displayPrice} onChange={handleChange} className="pl-10" />
                                         </div>
                                     </div>
                                 </div>

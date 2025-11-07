@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Printer, PrinterStatus, Transaction } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, PrinterIcon } from '../components/Icons';
 import { dataService } from '../services/dataService';
@@ -65,7 +65,7 @@ interface PrinterFormModalProps {
 }
 
 const PrinterFormModal: React.FC<PrinterFormModalProps> = ({ printer, onSave, onClose, onOpenInfo }) => {
-  const buildInitialState = () => ({
+  const buildInitialState = useCallback(() => ({
     name: printer?.name ?? '',
     model: printer?.model ?? '',
     status: (printer?.status as PrinterStatus) ?? 'Ociosa',
@@ -76,14 +76,14 @@ const PrinterFormModal: React.FC<PrinterFormModalProps> = ({ printer, onSave, on
     total_print_hours: printer?.total_print_hours ?? 0,
     maintenance_history: printer?.maintenance_history ?? '',
     notes: printer?.notes ?? '',
-  });
+  }), [printer]);
 
   const [formData, setFormData] = useState<Omit<Printer, 'id' | 'created_at' | 'updated_at'>>(buildInitialState);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setFormData(buildInitialState());
-  }, [printer?.id]);
+  }, [printer?.id, buildInitialState]);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -227,6 +227,7 @@ const PrintersPage: React.FC<PrintersPageProps> = ({ printers, setPrinters, setT
     if (printers.length === 0) {
       loadPrinters();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredPrinters = useMemo(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Component, Transaction, Settings } from '../types';
 import { PlusIcon, PlusCircleIcon, EditIcon, TrashIcon, WrenchIcon } from '../components/Icons';
 import { dataService } from '../services/dataService';
@@ -23,7 +23,7 @@ interface ComponentFormModalProps {
 }
 
 const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSave, onClose }) => {
-  const buildInitialState = () => ({
+  const buildInitialState = useCallback(() => ({
     name: component?.name ?? '',
     category: component?.category ?? 'Hardware',
     stock: component?.stock ?? 0,
@@ -31,14 +31,14 @@ const ComponentFormModal: React.FC<ComponentFormModalProps> = ({ component, onSa
     supplier: component?.supplier ?? '',
     purchase_date: formatDateInput(component?.purchase_date),
     notes: component?.notes ?? '',
-  });
+  }), [component]);
 
   const [formData, setFormData] = useState<Omit<Component, 'id' | 'created_at' | 'updated_at'>>(buildInitialState);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setFormData(buildInitialState());
-  }, [component?.id]);
+  }, [component?.id, buildInitialState]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -251,6 +251,7 @@ const ComponentsPage: React.FC<ComponentsPageProps> = ({ components, setComponen
     if (components.length === 0) {
       loadComponents();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredComponents = useMemo(

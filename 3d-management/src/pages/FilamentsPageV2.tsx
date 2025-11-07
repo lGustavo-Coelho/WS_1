@@ -161,7 +161,7 @@ const FilamentsPageV2: React.FC = () => {
             {filaments.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                  Nenhum filamento cadastrado. Clique em "Adicionar Filamento" para começar.
+                  Nenhum filamento cadastrado. Clique em &quot;Adicionar Filamento&quot; para começar.
                 </td>
               </tr>
             ) : (
