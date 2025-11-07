@@ -12,22 +12,34 @@ interface QuoteCalculatorModalProps {
 
 const EXPECTED_PRINTER_LIFETIME_HOURS = 5000;
 
+// Helper to create initial quote item
+const createInitialQuoteItem = (filaments: Filament[], printers: Printer[]): QuoteItem => ({
+    id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+    description: '',
+    filamentGrams: 0,
+    printHours: 0,
+    postProcessingHours: 0,
+    filamentId: filaments[0]?.id || '',
+    printerId: printers[0]?.id || '',
+    price: 0
+});
+
 const QuoteCalculatorModal: React.FC<QuoteCalculatorModalProps> = ({ onClose, onSave, settings, filaments, printers }) => {
     const [customerName, setCustomerName] = useState('');
     const [designHours, setDesignHours] = useState(0);
     const [preparationHours, setPreparationHours] = useState(0);
-    const [items, setItems] = useState<QuoteItem[]>([
-        { id: `item-${Date.now()}`, description: '', filamentGrams: 0, printHours: 0, postProcessingHours: 0, filamentId: filaments[0]?.id || '', printerId: printers[0]?.id || '', price: 0 }
-    ]);
+    const [items, setItems] = useState<QuoteItem[]>(() => [createInitialQuoteItem(filaments, printers)]);
 
     const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: settings.currency }).format(value);
 
     const calculationResult = useMemo(() => {
-        let totalMaterialCost = 0;
-        let totalMachineCost = 0;
-        let totalLaborCost = 0;
-
-        const calculatedItems = items.map(item => {
+        type CalculatedQuoteItem = QuoteItem & { 
+            materialCost?: number; 
+            machineCost?: number; 
+            postProcessingCost?: number; 
+        };
+        
+        const calculatedItems: CalculatedQuoteItem[] = items.map(item => {
             const filament = filaments.find(f => f.id === item.filamentId);
             const printer = printers.find(p => p.id === item.printerId);
 
@@ -41,20 +53,18 @@ const QuoteCalculatorModal: React.FC<QuoteCalculatorModalProps> = ({ onClose, on
             const postProcessingCost = item.postProcessingHours * settings.postProcessingHourlyRate;
             
             const machineCost = energyCost + depreciationCost;
-            
-            totalMaterialCost += materialCost;
-            totalMachineCost += machineCost;
-            totalLaborCost += postProcessingCost;
 
             const subtotal = materialCost + machineCost + postProcessingCost;
             const finalPrice = subtotal * (1 + settings.profitMargin / 100);
 
-            return { ...item, price: finalPrice };
+            return { ...item, price: finalPrice, materialCost, machineCost, postProcessingCost };
         });
 
+        const totalMaterialCost = calculatedItems.reduce((sum, item) => sum + (item.materialCost || 0), 0);
+        const totalMachineCost = calculatedItems.reduce((sum, item) => sum + (item.machineCost || 0), 0);
         const designCost = designHours * settings.designHourlyRate;
         const preparationCost = preparationHours * settings.preparationHourlyRate;
-        totalLaborCost += designCost + preparationCost;
+        const totalLaborCost = calculatedItems.reduce((sum, item) => sum + (item.postProcessingCost || 0), 0) + designCost + preparationCost;
         
         const totalSubtotal = totalMaterialCost + totalMachineCost + totalLaborCost;
         const grandTotal = totalSubtotal * (1 + settings.profitMargin / 100);
@@ -88,7 +98,7 @@ const QuoteCalculatorModal: React.FC<QuoteCalculatorModalProps> = ({ onClose, on
     };
 
     const addItem = () => {
-        setItems(prev => [...prev, { id: `item-${Date.now()}`, description: '', filamentGrams: 0, printHours: 0, postProcessingHours: 0, filamentId: filaments[0]?.id || '', printerId: printers[0]?.id || '', price: 0 }]);
+        setItems(prev => [...prev, createInitialQuoteItem(filaments, printers)]);
     };
     
     const removeItem = (id: string) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DashboardPage from './pages/DashboardPage';
@@ -58,7 +58,6 @@ const App: React.FC = () => {
         setIsAuthenticated(false);
     };
 
-
     const pageTitles: { [key: string]: string } = {
         dashboard: 'Dashboard',
         quotes: 'Orçamentos',
@@ -74,16 +73,20 @@ const App: React.FC = () => {
         settings: 'Configurações',
     };
 
+    const dashboardStats = useMemo(() => ({
+        filaments: filaments.length,
+        printers: printers.length,
+        jobs: printJobs.filter(j => j.status === 'printing').length,
+        revenue: transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
+    }), [filaments.length, printers.length, printJobs, transactions]);
+
+    const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
+
     const renderPage = () => {
         switch (activePage) {
             case 'dashboard': return <DashboardPage 
-                stats={{
-                    filaments: filaments.length,
-                    printers: printers.length,
-                    jobs: printJobs.filter(j => j.status === 'printing').length,
-                    revenue: transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-                }}
-                recentTransactions={transactions.slice(0, 5)}
+                stats={dashboardStats}
+                recentTransactions={recentTransactions}
                 printJobs={printJobs}
                 settings={settings}
             />;

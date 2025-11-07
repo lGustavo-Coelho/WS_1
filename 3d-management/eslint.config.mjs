@@ -58,6 +58,7 @@ export default [
       'build/**',
       '*.config.js',
       '*.config.ts',
+      'test-electron.js',
     ],
   },
 ];

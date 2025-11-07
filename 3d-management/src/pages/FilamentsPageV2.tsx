@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFilaments } from '../hooks/useFilaments';
 import { Filament } from '../types';
+import { logger } from '../utils/logger';
 
 const FilamentsPageV2: React.FC = () => {
   const { filaments, loading, error, create, update, remove } = useFilaments();
@@ -28,7 +29,7 @@ const FilamentsPageV2: React.FC = () => {
       }
       closeModal();
     } catch (err) {
-      console.error('Failed to save filament:', err);
+      logger.error('Failed to save filament', { error: err, formData });
     }
   };
 
@@ -73,7 +74,7 @@ const FilamentsPageV2: React.FC = () => {
       try {
         await remove(id);
       } catch (err) {
-        console.error('Failed to delete filament:', err);
+        logger.error('Failed to delete filament', { error: err, id });
       }
     }
   };
@@ -161,7 +162,7 @@ const FilamentsPageV2: React.FC = () => {
             {filaments.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                  Nenhum filamento cadastrado. Clique em "Adicionar Filamento" para começar.
+                  Nenhum filamento cadastrado. Clique em &quot;Adicionar Filamento&quot; para começar.
                 </td>
               </tr>
             ) : (

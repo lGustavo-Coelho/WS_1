@@ -49,7 +49,12 @@ const FilamentFormModal: React.FC<FilamentFormModalProps> = ({ filament, onSave,
     e.preventDefault();
     setIsLoading(true);
     try {
-      const filamentToSave: Filament = { ...formData as any, id: filament?.id || `FIL-${Date.now()}` };
+      const filamentToSave: Filament = { 
+        ...formData, 
+        id: filament?.id || `FIL-${Date.now()}`,
+        created_at: filament?.created_at,
+        updated_at: filament?.updated_at
+      };
       onSave(filamentToSave);
     } catch (error) {
       logger.error('Error saving filament', { error });
@@ -230,6 +235,7 @@ const FilamentsPage: React.FC<FilamentsPageProps> = ({ filaments, setFilaments, 
     if (filaments.length === 0) {
       loadFilaments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredFilaments = useMemo(() => {

@@ -27,7 +27,8 @@ export class DataService {
 
   async createFilament(filament: Filament) {
     try {
-      await filamentRepository.create(filament as any);
+      // Type assertion needed to match repository interface expecting id with data
+      await filamentRepository.create(filament as Omit<Filament, 'id'> & { id: string });
       const created = await filamentRepository.findById(filament.id);
 
       if (!created) {
@@ -44,7 +45,7 @@ export class DataService {
 
   async updateFilament(id: string, data: Partial<Filament>) {
     try {
-      await filamentRepository.update(id, data as any);
+      await filamentRepository.update(id, data as Partial<Omit<Filament, 'id'>>);
       logger.info('Filament updated', { id });
       const updated = await filamentRepository.findById(id);
 
@@ -80,7 +81,8 @@ export class DataService {
 
   async createComponent(component: Component) {
     try {
-      await componentRepository.create(component as any);
+      // Type assertion needed to match repository interface expecting id with data
+      await componentRepository.create(component as Omit<Component, 'id'> & { id: string });
       const created = await componentRepository.findById(component.id);
 
       if (!created) {
@@ -97,7 +99,7 @@ export class DataService {
 
   async updateComponent(id: string, data: Partial<Component>) {
     try {
-      await componentRepository.update(id, data as any);
+      await componentRepository.update(id, data as Partial<Omit<Component, 'id'>>);
       logger.info('Component updated', { id });
       const updated = await componentRepository.findById(id);
 
@@ -133,7 +135,8 @@ export class DataService {
 
   async createPrinter(printer: Printer) {
     try {
-      await printerRepository.create(printer as any);
+      // Type assertion needed to match repository interface expecting id with data
+      await printerRepository.create(printer as Omit<Printer, 'id'> & { id: string });
       const created = await printerRepository.findById(printer.id);
 
       if (!created) {
@@ -150,7 +153,7 @@ export class DataService {
 
   async updatePrinter(id: string, data: Partial<Printer>) {
     try {
-      await printerRepository.update(id, data as any);
+      await printerRepository.update(id, data as Partial<Omit<Printer, 'id'>>);
       logger.info('Printer updated', { id });
       const updated = await printerRepository.findById(id);
 
